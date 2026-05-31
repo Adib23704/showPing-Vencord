@@ -6,6 +6,6 @@
 
 import { findStoreLazy } from "@webpack";
 
-import * as t from "./types/stores";
+import * as t from "./types";
 
 export const RTCConnectionStore: t.RTCConnectionStore = findStoreLazy("RTCConnectionStore");

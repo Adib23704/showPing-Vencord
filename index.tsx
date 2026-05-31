@@ -4,16 +4,26 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { findCssClassesLazy } from "@webpack";
 import definePlugin from "@utils/types";
-import { React } from "@webpack/common";
+import { FluxDispatcher, React, useEffect, useState } from "@webpack/common";
 
-import { PingElement } from "./components/Ping";
-import { settings } from "./settings";
+import { RTCConnectionStore } from "./stores";
 
-import { findByPropsLazy } from "@webpack";
+function InlinePingText({ text }: { text: string; }) {
+    const [ping, setPing] = useState(() => RTCConnectionStore.getLastPing());
 
-const classes = findByPropsLazy("voiceUsers", "channel");
-const oldContainer = classes.container;
+    useEffect(() => {
+        const update = () => setPing(RTCConnectionStore.getLastPing());
+        FluxDispatcher.subscribe("RTC_CONNECTION_PING", update);
+        return () => FluxDispatcher.unsubscribe("RTC_CONNECTION_PING", update);
+    }, []);
+
+    return <>{ping !== undefined ? `${text} - ${ping} ms` : text}</>;
+}
+
+const classes = findCssClassesLazy("container", "voiceUsers", "channel");
+let oldContainer: string;
 
 export default definePlugin({
     name: "ShowPing",
@@ -22,41 +32,26 @@ export default definePlugin({
         name: "nicola02nb",
         id: 257900031351193600n
     }],
-    settings,
     patches: [
         {
-            find: ".hoverableStatus),hoverText:",
+            find: "IlHdW8",
             replacement: {
-                match: /(children:\i}\):null,children:)(\(0,\i.jsx\)\(\i.Text,.+?\i\}\))/,
-                replace: "$1[$2,$self.renderPing()]"
-            }
-        },
-        {
-            find: "\"quality\",\"largePing\"",
-            replacement: {
-                match: /(\(0,\i.jsx\)\(\i,\i\({className:\i\(\)\(\i.ping,{\[\i.largePing\]:\i}\)},i\)\))/,
-                replace: " $self.renderContainer($1)"
+                match: /color:"currentColor",children:(\i)(\}\)\}\))/,
+                replace: 'color:"currentColor",children:$self.appendPing($1)$2'
             }
         }
     ],
     start: () => {
+        oldContainer = classes.container;
         classes.container += " vc-connection-container";
     },
     stop: () => {
         classes.container = oldContainer;
     },
 
-    renderPing() {
-        if (!settings.store.showNearbyConnectionStatus) return null;
-        return <PingElement variant="text-sm/medium" />;
+    appendPing(text: string) {
+        return <InlinePingText text={text} />;
     },
-    renderContainer(children: React.ReactNode) {
-        if (!settings.store.showUnderConnectionIcon) return children;
-        return <div className="pingContainer">
-            {children}
-            <PingElement variant="text-xxs/medium" parenthesis={false} color="var(--text-feedback-positive)" />
-        </div>;
-    }
 });
 
 
