@@ -31,7 +31,7 @@ export default definePlugin({
     authors: [{
         name: "nicola02nb",
         id: 257900031351193600n
-    }],
+    }, { name: "__azuree__", id: 451657007791996929n }],
     patches: [
         {
             find: "IlHdW8",
